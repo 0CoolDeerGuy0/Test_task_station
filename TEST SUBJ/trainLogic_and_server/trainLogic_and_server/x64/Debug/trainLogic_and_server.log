@@ -1,0 +1,3 @@
+﻿  test.cpp
+C:\Users\Admin\Downloads\Telegram Desktop\test.cpp(112,30): warning C4834: discarding return value of function with [[nodiscard]] attribute
+  trainLogic_and_server.vcxproj -> C:\Users\Admin\Desktop\TEST SUBJ\trainLogic_and_server\x64\Debug\trainLogic_and_server.exe
