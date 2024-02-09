@@ -15,10 +15,10 @@ public:
 
     Train( int length, Section* startSection, std::list<Section*> preferredPath, int trainID );
 
-    void Here() const;
     void MoveForward(Station* graph);
     void setToStart(Station* graph);
-    void getOccupied();
+    bool isLeave();
+    void showOC();
 
     // получение секции, на котиорой находится голова поезда
     Section* Head();

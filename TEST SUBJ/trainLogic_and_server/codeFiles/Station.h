@@ -6,6 +6,7 @@
 #include <vector>
 #include <chrono>
 #include <list>
+#include <mutex>
 
 using namespace std;
 
@@ -52,9 +53,11 @@ public:
 
 class Station {
 public:
+    mutex mut;
     map<string, Section*> sections;
-    vector<Train*> trains;    
+    list<Train*> trains;    
     Section* FindPath(Section* headPosition, list<Section*> target);
+    Section* NewPath(Section* headPosition, list<Section*> target);
     void addSection(string name, bool isEndPoint = false);
     void addPath(string from, string to);
     void addTrain(Train* train);

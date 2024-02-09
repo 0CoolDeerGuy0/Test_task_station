@@ -8,6 +8,8 @@
 #include <random>
 #include <thread>
 #include <string>
+#include <list>
+#include <mutex>
 
 /*
 
@@ -15,47 +17,56 @@ constexpr auto QUEUE_NAME = "hellothere";
 
 */
 
-void spawnTrain(Station* station, int id) {
+std::mutex mtx;
+
+void ariveTrain(Station* station, int id) {
     if (!station->sections["LINE_A_START"]->occupied()) {
         cout << "cant enter, enter is occupied" << endl;
-        cout << "if its 1 its realy occupied: " << station->sections["LINE_A_START"]->occupied() << endl;
+        //cout << "if its 1 its realy occupied: " << station->sections["LINE_A_START"]->occupied() << endl;
     }
     else {
 
-        list<Section*>possiblePaths = { station->sections["SECTION_A1"], station->sections["SECTION_AA_START"], station->sections["SECTION_A6"], station->sections["SECTION_AB_END"], };
+        list<Section*>possiblePaths = { station->sections["SECTION_A1"], station->sections["SECTION_AA_START"], station->sections["SECTION_A6"], station->sections["SECTION_AB_START"], };
         list<Section*>path;
 
-        // генерация первого пути
+        // Определение маршрута поезда
         int pathNum = rand() % 2;
-        path.push_front(*std::next(possiblePaths.begin(), pathNum));
+        path.push_back(*std::next(possiblePaths.begin(), pathNum));
+        pathNum = (rand() % 2) + 2;
+        path.push_back(*std::next(possiblePaths.begin(), pathNum));
+        path.push_back(station->sections["LINE_A_END"]);
 
-        // генерация второго пути
-        pathNum = 2 + rand() % 4;
-        path.push_front(*std::next(possiblePaths.begin(), pathNum));
+        /*for (auto path : path) {
+            cout << path->name << " path" << endl;
+        }*/
 
-        // добавление пути выхода
-        path.push_front(station->sections["LINE_A_END"]);
-
-        // создание поезда
+        // Определение длины поезда, а так же создание объекта
         int len = 1 + rand() % 4;
         Train* newTrain = new Train(len, station->sections["LINE_A_START"], path, id);
 
-        cout << newTrain;
-
-        // добавление поезда к станции
         station->addTrain(newTrain);
-
-        cout << "train is ready!" << endl;
+        newTrain->setToStart(station);
+        cout << newTrain << " with len of: " << len << " is ready!" << endl;
     }
+}
+
+void trainMove(Train* train, Station* station) {
+    cout << train << " this train is trying to move!" << endl;
+    train->MoveForward(station);
+}
+
+void trainSpawn(Station* station, int id) {
+    ariveTrain(station, id);
 }
 
 int main()
 {
-    int globalTrainId = 1; 
+        int globalTrainId = 1;
         Station station;
+        list<Train*> toDelete;
 
         // Добавляем вершины
-        station.addSection("LINE_A_START", true);
+        station.addSection("LINE_A_START", false);
         station.addSection("SECTION_A5", false);
         station.addSection("SECTION_A1", false);
         station.addSection("SECTION_A2", false);
@@ -73,7 +84,7 @@ int main()
         station.addSection("SECTION_AB_START", false);
         station.addSection("SECTION_AB1", false);
         station.addSection("SECTION_AB2",false);
-        station.addSection("SECTION_AB_END", true);
+        station.addSection("SECTION_AB_END", false);
 
         // Добавляем ребра
         station.addPath("LINE_A_START", "SECTION_A1");
@@ -97,20 +108,37 @@ int main()
         station.addPath("SECTION_AB2", "SECTION_AB_END");
         station.addPath("SECTION_AB_END", "LINE_A_END");
 
-        cout << station.sections["LINE_A_START"]->train << endl;
-        spawnTrain(&station, globalTrainId);
-        cout << station.trains[0] << endl;
-        station.trains[0]->setToStart(&station);
-        cout << station.sections["LINE_A_START"]->train << endl;
+        //cout << station.sections["LINE_A_START"]->train << endl;
 
+        /*spawnTrain(&station, globalTrainId);
+
+        station.trains[0]->setToStart(&station);
+        cout << "neadposition: " << station.trains[0]->Head()->name << endl;
+
+        //cout << station.sections["LINE_A_START"]->train << endl;
+        int s = 0;
         for (Train* train : station.trains) {
-            train->MoveForward(&station);
-            train->GetEvents();
-            train->ClearEvents();
+            while (!train->isLeave()) {
+                cout << train << " train what try to move" << endl;
+                train->MoveForward(&station);
+                s++;
+            }
+
+            if (train->isLeave()) {
+                toDelete.push_back(train);
+                station.trains.erase(station.trains.begin());
+            }
         }
 
+        for (Train* train : toDelete) {
+            cout << "This train is going to be deleted: " << train << endl;
+            delete train;
+        }
 
-/*
+        cout << station.trains.size() << " trains on station" << endl;*/
+
+        cout << station.sections["SECTION_A5"]->neighbors.size();
+
         volatile bool stop = false;
         bool stopSign = false;
         auto spawnThread = new std::thread(
@@ -119,10 +147,12 @@ int main()
                 std::cout << "spawnThread started!\n";
                 while (!stop)
                 {
-                    spawnTrain(&station, globalTrainId);
-                    globalTrainId += 1;
-                    std::cout << "trains in station: " << station.trains.size() << endl;
+                    station.mut.lock();
+                    trainSpawn(&station, globalTrainId);
+                    globalTrainId++;
+                    station.mut.unlock();
                     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+
                 }
                 std::cout << "spawnThread stoped!\n";
             }
@@ -134,26 +164,33 @@ int main()
                 std::cout << "moveThread started!\n";
                 while (!stop)
                 {
+                    station.mut.lock();
                     for (Train* train : station.trains) {
-                        train->MoveForward(&station);
-                        train->GetEvents();
-                        train->ClearEvents();
-                        cout << "im trying!" << endl;
+                        trainMove(train, &station);
+                        train->showOC();
+
+                        if (train->isLeave()) {
+                            toDelete.push_back(train);
+                        }
                     }
 
+                    for (auto& train : toDelete) {
+                        cout << " This train is going to be deleted: " << train << endl;
+                        station.trains.remove(train);
+                        //delete train;
+                    }
+                    toDelete.clear();
+                    station.mut.unlock();
                     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
                 }
                 std::cout << "moveThread stoped!\n";
             }
-        );
+        ); 
 
-        spawnThread->detach();
-        moveThread->detach();
+        spawnThread->join();
+        moveThread->join();
 
         std::cin >> stopSign;
-
-*/
-
 
 // TODO передача сообщений + формирование json 
 /*

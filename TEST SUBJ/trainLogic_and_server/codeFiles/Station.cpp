@@ -1,19 +1,38 @@
 #include "Station.h"
 #include <list>
+#include <iostream>
 
 
 
 Section* Station::FindPath(Section* headPosition, list<Section*> target)
 {
-    if (target.size() == 1) return target.back(); // едем "сквозь" выход
+    if (target.back() == headPosition) { return target.back(); } // едем "сквозь" выход
 
+    if (headPosition->neighbors.size() > 1) {
+
+        return NewPath(headPosition, target);
+
+    }
+    else {
+        if (headPosition->neighbors.front()->occupied() && headPosition->neighbors.size() != 0) {
+            return headPosition->neighbors.front();
+        }
+        return nullptr;
+    }
+    return nullptr;
+}
+
+Section* Station::NewPath(Section* headPosition, list<Section*> target)
+{
     for (auto& section : headPosition->neighbors)
     {
-        if (!section->occupied()) // если секция занята, не важно, ведет ли она к цели, все равно придется ждать ее освобождения
+        if (section->occupied()) // если секция занята, не важно, ведет ли она к цели, все равно придется ждать ее освобождения
         {
-            if (section == target.back()) return section;
-            auto secToTarget = FindPath(section, target);
-            if (secToTarget != nullptr) return section;
+            if (section == target.front()) { return section; }
+
+            auto secToTarget = NewPath(section, target);
+
+            if (secToTarget != nullptr) { return section; }
         }
     }
     return nullptr;

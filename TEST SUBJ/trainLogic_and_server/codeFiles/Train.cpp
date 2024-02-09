@@ -14,10 +14,10 @@ Train::Train( int length, Section* startSection, list<Section*> preferredPath, i
 
 }
 
-void Train::Here() const {
-    std::cout << m_length << " ";
-    std::cout << m_step << " ";
-    std::cout << endl;
+void Train::showOC() {
+    for (Section* section : this->occupiedSections) {
+        cout << section->name << endl;
+    }
 }
 
 void Train::MoveForward(Station* graph)
@@ -28,14 +28,21 @@ void Train::MoveForward(Station* graph)
         return;
     }
 
-    Section* nextSec = graph->FindPath(Head(), m_preferredPath);
+    Section* nextSec = graph->FindPath(Head(), this->m_preferredPath);
     if (nextSec == nullptr)
     {
         std::cout << "no way at now\n";
         return;
     }
-    if (nextSec == m_preferredPath.back())
-        m_preferredPath.pop_back(); // дошли до желаемой точки, теперь стремимся к следующей
+    if (m_preferredPath.size() > 1) {
+        if (nextSec == m_preferredPath.front()) {
+            m_preferredPath.pop_front(); // дошли до желаемой точки, теперь стремимся к следующей
+        }
+    }
+    else {
+        OccupySection(nextSec);
+    }
+
     OccupySection(nextSec);
 
 };
@@ -56,9 +63,18 @@ void Train::ClearEvents()
 }
 
 void Train::setToStart(Station* graph) {
-    Train::occupiedSections.push_back(graph->sections["LINE_A_START"]);
-    graph->sections["LINE_A_START"]->train = this;
-    OnSectionEnter(graph->sections["LINE_A_START"]);
+    if (graph->sections["LINE_A_START"]->occupied()) {
+        Train::occupiedSections.push_back(graph->sections["LINE_A_START"]);
+        graph->sections["LINE_A_START"]->train = this;
+        OnSectionEnter(graph->sections["LINE_A_START"]);
+    }
+    else {
+        cout << "sorry, start is occupy(" << endl;
+    }
+}
+
+bool Train::isLeave() {
+    return this->m_passed;
 }
 
 /*void Train::getOccupied() {
@@ -72,6 +88,8 @@ void Train::OccupySection(Section* s)
     m_step++;
     if (s->isEndPoint) // голова поезда находится или заезжает на выезд
     {
+        cout << s->train << " is leaving!!" << endl;
+
         // если только что заехали на выезд, ставим голову на него. потом она остается на выезде а хвост будет сокращаться
         if (Head() != s) occupiedSections.push_front(s);
 
@@ -94,7 +112,7 @@ void Train::OccupySection(Section* s)
     occupiedSections.push_front(s);
     OnSectionEnter(s);
 
-    if (occupiedSections.size() >= m_length) // поезд полностью находится на станции, освобождаем секцию под бывшим хвостом
+    if (occupiedSections.size() > m_length) // поезд полностью находится на станции, освобождаем секцию под бывшим хвостом
     {
         Section* releasedSection = occupiedSections.back();
         releasedSection->train = nullptr;
