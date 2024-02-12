@@ -9,17 +9,28 @@
 #include <thread>
 #include <string>
 #include <list>
-#include <mutex>
-
-/*
+#include <nlohmann/json.hpp>
+#include <SimpleAmqpClient/SimpleAmqpClient.h>
+using json = nlohmann::json;
 
 constexpr auto QUEUE_NAME = "hellothere";
 
-*/
+void sendData(json data) {
+    try
+    {
+        auto channel = AmqpClient::Channel::Create("localhost", 5672, "guest", "guest");
+        channel->DeclareQueue(QUEUE_NAME, false, true, false, false);
+        auto message = AmqpClient::BasicMessage::Create(data.dump());
+        channel->BasicPublish("", QUEUE_NAME, message);
+        clog << "[x] Message Sent" << endl;
+    }
+    catch (const exception& error)
+    {
+        cerr << error.what() << endl;
+    }
+}
 
-std::mutex mtx;
-
-void ariveTrain(Station* station, int id) {
+void trainSpawn(Station* station, int id) {
     if (!station->sections["LINE_A_START"]->occupied()) {
         cout << "cant enter, enter is occupied" << endl;
         //cout << "if its 1 its realy occupied: " << station->sections["LINE_A_START"]->occupied() << endl;
@@ -55,15 +66,17 @@ void trainMove(Train* train, Station* station) {
     train->MoveForward(station);
 }
 
-void trainSpawn(Station* station, int id) {
-    ariveTrain(station, id);
-}
+//void trainSpawn(Station* station, int id, int& globid) {
+//    ariveTrain(station, id);
+//}
 
 int main()
-{
+{       
         int globalTrainId = 1;
         Station station;
         list<Train*> toDelete;
+        json dataToSend;
+        bool sendFlag = 0;
 
         // Добавляем вершины
         station.addSection("LINE_A_START", false);
@@ -136,8 +149,7 @@ int main()
         }
 
         cout << station.trains.size() << " trains on station" << endl;*/
-
-        cout << station.sections["SECTION_A5"]->neighbors.size();
+        
 
         volatile bool stop = false;
         bool stopSign = false;
@@ -167,11 +179,32 @@ int main()
                     station.mut.lock();
                     for (Train* train : station.trains) {
                         trainMove(train, &station);
+
                         train->showOC();
+
+                        if (train->GetEvents().size() != 0) {
+                            sendFlag = 1;
+                            for (auto& eve : train->GetEvents()) {
+                                nlohmann::json ev = {
+                                    {"type", eve->type},
+                                    {"section", eve->section->name},
+                                    {"trainId", eve->train->getId()}
+                                };
+                                dataToSend["events"].push_back(ev);
+                                
+                            }
+                            train->ClearEvents();
+                        }
 
                         if (train->isLeave()) {
                             toDelete.push_back(train);
                         }
+                    }
+
+                    if (sendFlag) {
+                        sendData(dataToSend);
+                        dataToSend.clear();
+                        sendFlag = 0;
                     }
 
                     for (auto& train : toDelete) {
@@ -195,19 +228,7 @@ int main()
 // TODO передача сообщений + формирование json 
 /*
 
-    try
-    {
-        auto channel = AmqpClient::Channel::Create("localhost", 5672, "guest", "guest");
-        channel->DeclareQueue(QUEUE_NAME, false, true, false, false);
-        auto message = AmqpClient::BasicMessage::Create("Hello World!");
-        channel->BasicPublish("", QUEUE_NAME, message);
-        clog << " [x] Sent 'Hello World!'" << endl;
-    }
-    catch (const exception& error)
-    {   
-        cout << "blyad" << endl;
-        cerr << error.what() << endl;
-    }
+
 */
     return 0;
 }

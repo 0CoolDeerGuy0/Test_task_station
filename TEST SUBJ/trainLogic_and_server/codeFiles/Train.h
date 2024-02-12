@@ -19,6 +19,7 @@ public:
     void setToStart(Station* graph);
     bool isLeave();
     void showOC();
+    int getId();
 
     // получение секции, на котиорой находится голова поезда
     Section* Head();

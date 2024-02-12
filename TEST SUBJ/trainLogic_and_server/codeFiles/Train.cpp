@@ -9,7 +9,7 @@ Train::Train( int length, Section* startSection, list<Section*> preferredPath, i
     m_step(0),
     m_preferredPath(preferredPath),
     m_passed(false),
-    m_id(0)
+    m_id(trainID)
 {
 
 }
@@ -18,6 +18,10 @@ void Train::showOC() {
     for (Section* section : this->occupiedSections) {
         cout << section->name << endl;
     }
+}
+
+int Train::getId() {
+    return this->m_id;
 }
 
 void Train::MoveForward(Station* graph)
@@ -34,14 +38,18 @@ void Train::MoveForward(Station* graph)
         std::cout << "no way at now\n";
         return;
     }
-    if (m_preferredPath.size() > 1) {
-        if (nextSec == m_preferredPath.front()) {
+
+    if (m_preferredPath.size() != 1) {
+        if (this->Head() == m_preferredPath.front()) {
             m_preferredPath.pop_front(); // дошли до желаемой точки, теперь стремимся к следующей
         }
     }
     else {
-        OccupySection(nextSec);
+        nextSec = graph->FindPath(Head(), this->m_preferredPath);
     }
+    //else {
+        //OccupySection(nextSec);
+    //}
 
     OccupySection(nextSec);
 

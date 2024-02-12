@@ -10,11 +10,11 @@ export class MessageService {
 
   constructor() { }
 
-  connect(): Observable<Message> {
+  connect(): Observable<any> {
     this.client = new Client({
       connectHeaders: {
-      login: 'guest',
-      passcode: 'guest',
+        login: 'guest',
+        passcode: 'guest',
       },
       brokerURL: 'ws://localhost:15674/ws',
       debug: function (str) {
@@ -22,12 +22,11 @@ export class MessageService {
       }
     });
 
-    return new Observable<Message>((observer) => {
+    return new Observable<any>((observer) => {
       this.client.onConnect = (frame) => {
         this.client.subscribe('hellothere', (message) => {
-          observer.next(message);
-          console.log(message);
-          console.log('recived');
+          observer.next(message.body);
+          console.log('received');
         });
       };
 

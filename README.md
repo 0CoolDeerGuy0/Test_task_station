@@ -8,19 +8,19 @@ My test task on C++ and Angular. It`s not complete yet)
 
 ang - frontend часть приложения вместе с Angular кодом
 
-trainLogic_and_server - backend часть приложения с проектом Visual Studio и кодом на C++
-
-few src - некоторые библиотеки для корректной работы приложения
+trainLogic_and_server - backend часть приложения с кодом на C++
 
 ## Запуск
 
 На данный момент процедура запуска рабочей части задачи производится следующим образом:
 
-1. Перейти в директорию .\Test_task_station\TEST SUBJ\trainLogic_and_server\x64\Release
-2. Запустить прилоежние trainLogic_and_server.exe
+(ВНИМАНИЕ) Перед запуском приложения следует убедиться что у вас установлен и работает сервер RabbitMQ с stomp плагином (<https://www.rabbitmq.com/stomp.html>), а так же в том что порт 5672, а так же порт 15674, свободны.
 
-По готовности остальных частей проекта потрубется так же запускать Frontend часть приложения (пока неактивна)
+1. Перейти в директорию .\Test_task_station\TEST SUBJ\ang\src\app
+2. Открыть командную строку/строку PowerShell, после чего выполнить ng serve
+3. Перейти в директорию .\Test_task_station\TEST SUBJ\trainLogic_and_server\Release
+4. Запустить прилоежние trainLogic_and_server.exe
 
 ### Результаты работы
 
-![SERVER WORK](./img/server_work1.png)
+![BROWSER WORK](./img/browser_work1.png)
