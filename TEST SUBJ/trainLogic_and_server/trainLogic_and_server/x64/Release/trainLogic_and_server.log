@@ -1,0 +1,10 @@
+﻿  Station.cpp
+  test.cpp
+  Unknown compiler version - please run the configure tests and report the results
+  Train.cpp
+  Generating code
+  1423 of 1432 functions (99.4%) were compiled, the rest were copied from previous compilation.
+    9 functions were new in current compilation
+    1 functions had inline decision re-evaluated but remain unchanged
+  Finished generating code
+  trainLogic_and_server.vcxproj -> C:\Users\Admin\Desktop\reserve\x64\Release\trainLogic_and_server.exe

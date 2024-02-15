@@ -13,8 +13,8 @@
 #include <SimpleAmqpClient/SimpleAmqpClient.h>
 using json = nlohmann::json;
 
+// Блок отправки сообщений 
 constexpr auto QUEUE_NAME = "hellothere";
-
 void sendData(json data) {
     try
     {
@@ -33,7 +33,6 @@ void sendData(json data) {
 void trainSpawn(Station* station, int id) {
     if (!station->sections["LINE_A_START"]->occupied()) {
         cout << "cant enter, enter is occupied" << endl;
-        //cout << "if its 1 its realy occupied: " << station->sections["LINE_A_START"]->occupied() << endl;
     }
     else {
 
@@ -47,23 +46,19 @@ void trainSpawn(Station* station, int id) {
         path.push_back(*std::next(possiblePaths.begin(), pathNum));
         path.push_back(station->sections["LINE_A_END"]);
 
-        /*for (auto path : path) {
-            cout << path->name << " path" << endl;
-        }*/
-
         // Определение длины поезда, а так же создание объекта
         int len = 1 + rand() % 4;
         Train* newTrain = new Train(len, station->sections["LINE_A_START"], path, id);
 
         station->addTrain(newTrain);
         newTrain->setToStart(station);
-        cout << newTrain << " with len of: " << len << " is ready!" << endl;
+        cout << "New train with ID: " << newTrain->getId() << " and len of: " << len << " is ready" << endl;
     }
 }
 
 void trainMove(Train* train, Station* station) {
-    cout << train << " this train is trying to move!" << endl;
-    train->MoveForward(station);
+    cout << "Train with ID: " << train->getId() << " trying to move" << endl;
+    train->moveForward(station);
 }
 
 //void trainSpawn(Station* station, int id, int& globid) {
@@ -121,14 +116,13 @@ int main()
         station.addPath("SECTION_AB2", "SECTION_AB_END");
         station.addPath("SECTION_AB_END", "LINE_A_END");
 
-        //cout << station.sections["LINE_A_START"]->train << endl;
 
+        // Отладочный блок, создающий 1 поезд и пускающий его до удаления
         /*spawnTrain(&station, globalTrainId);
 
         station.trains[0]->setToStart(&station);
         cout << "neadposition: " << station.trains[0]->Head()->name << endl;
 
-        //cout << station.sections["LINE_A_START"]->train << endl;
         int s = 0;
         for (Train* train : station.trains) {
             while (!train->isLeave()) {
@@ -150,7 +144,6 @@ int main()
 
         cout << station.trains.size() << " trains on station" << endl;*/
         
-
         volatile bool stop = false;
         bool stopSign = false;
         auto spawnThread = new std::thread(
@@ -160,9 +153,14 @@ int main()
                 while (!stop)
                 {
                     station.mut.lock();
+
                     trainSpawn(&station, globalTrainId);
                     globalTrainId++;
+                    if (globalTrainId >= 256) {
+                        globalTrainId = 1;
+                    }
                     station.mut.unlock();
+
                     std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
                 }
@@ -180,11 +178,9 @@ int main()
                     for (Train* train : station.trains) {
                         trainMove(train, &station);
 
-                        train->showOC();
-
-                        if (train->GetEvents().size() != 0) {
+                        if (train->getEvents().size() != 0) {
                             sendFlag = 1;
-                            for (auto& eve : train->GetEvents()) {
+                            for (auto& eve : train->getEvents()) {
                                 nlohmann::json ev = {
                                     {"type", eve->type},
                                     {"section", eve->section->name},
@@ -193,7 +189,7 @@ int main()
                                 dataToSend["events"].push_back(ev);
                                 
                             }
-                            train->ClearEvents();
+                            train->clearEvents();
                         }
 
                         if (train->isLeave()) {
@@ -210,7 +206,7 @@ int main()
                     for (auto& train : toDelete) {
                         cout << " This train is going to be deleted: " << train << endl;
                         station.trains.remove(train);
-                        //delete train;
+                        delete train;
                     }
                     toDelete.clear();
                     station.mut.unlock();
@@ -223,12 +219,5 @@ int main()
         spawnThread->join();
         moveThread->join();
 
-        std::cin >> stopSign;
-
-// TODO передача сообщений + формирование json 
-/*
-
-
-*/
     return 0;
 }

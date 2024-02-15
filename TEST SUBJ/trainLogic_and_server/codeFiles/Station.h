@@ -19,9 +19,9 @@ public:
     Train* train;
     bool occupied(){return train == nullptr;}
 
-    // является ли секция въездом или выездом со станции
+    // является ли секция выездом со станции
     bool isEndPoint;
-    Section(string _name, bool isEnd) : name(_name), train(nullptr), isEndPoint(isEnd) {}
+    Section(string name, bool isEnd) : name(name), train(nullptr), isEndPoint(isEnd) {}
 };
 
 class StationEvent
@@ -56,8 +56,8 @@ public:
     mutex mut;
     map<string, Section*> sections;
     list<Train*> trains;    
-    Section* FindPath(Section* headPosition, list<Section*> target);
-    Section* NewPath(Section* headPosition, list<Section*> target);
+    Section* findPath(Section* headPosition, list<Section*> target);
+    Section* newPath(Section* headPosition, list<Section*> target);
     void addSection(string name, bool isEndPoint = false);
     void addPath(string from, string to);
     void addTrain(Train* train);

@@ -4,25 +4,24 @@
 
 
 
-Section* Station::FindPath(Section* headPosition, list<Section*> target)
+Section* Station::findPath(Section* headPosition, list<Section*> target)
 {
     if (target.back() == headPosition) { return target.back(); } // едем "сквозь" выход
 
     if (headPosition->neighbors.size() > 1) {
 
-        return NewPath(headPosition, target);
+        return newPath(headPosition, target);
 
-    }
+    } 
     else {
         if (headPosition->neighbors.front()->occupied() && headPosition->neighbors.size() != 0) {
             return headPosition->neighbors.front();
         }
-        return nullptr;
     }
     return nullptr;
 }
 
-Section* Station::NewPath(Section* headPosition, list<Section*> target)
+Section* Station::newPath(Section* headPosition, list<Section*> target)
 {
     for (auto& section : headPosition->neighbors)
     {
@@ -30,7 +29,7 @@ Section* Station::NewPath(Section* headPosition, list<Section*> target)
         {
             if (section == target.front()) { return section; }
 
-            auto secToTarget = NewPath(section, target);
+            auto secToTarget = newPath(section, target);
 
             if (secToTarget != nullptr) { return section; }
         }
